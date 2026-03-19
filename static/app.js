@@ -77,6 +77,7 @@ window.checkEmptyStates = function() {
     const hasItems = sl.querySelector('[id^="item-"]') !== null;
     const daf = document.getElementById('desktop-add-form');
     const mab = document.getElementById('mobile-add-item-btn');
+    const gqa = document.getElementById('global-quick-add');
 
     if (!hasSections) {
         // No sections: show "No sections", hide "No products", hide add form
@@ -97,6 +98,7 @@ window.checkEmptyStates = function() {
         }
         if (daf) daf.style.display = 'none';
         if (mab) mab.style.display = 'none';
+        if (gqa) gqa.style.display = 'none';
     } else if (!hasItems) {
         // Sections exist but no items: show "No products", hide "No sections", show add form
         document.getElementById('empty-no-sections')?.remove();
@@ -115,12 +117,14 @@ window.checkEmptyStates = function() {
         }
         if (daf) daf.style.removeProperty('display');
         if (mab) mab.style.removeProperty('display');
+        if (gqa) gqa.style.removeProperty('display');
     } else {
         // Has sections and items: remove all empty states, show add form
         document.getElementById('empty-no-sections')?.remove();
         document.getElementById('empty-no-products')?.remove();
         if (daf) daf.style.removeProperty('display');
         if (mab) mab.style.removeProperty('display');
+        if (gqa) gqa.style.removeProperty('display');
     }
 };
 
@@ -298,6 +302,11 @@ function shoppingList() {
         _isAddFormActive() {
             // Check if mobile add-item modal is open
             if (this.showAddItem) {
+                return true;
+            }
+            // Check if global quick add bar input is focused
+            const globalInput = document.getElementById('global-quick-add-input');
+            if (globalInput && document.activeElement === globalInput) {
                 return true;
             }
             // Check if desktop form has focus (name input or section select)
@@ -2287,7 +2296,7 @@ function shoppingList() {
                 iosTrigger.focus();
             }
 
-            // Close any other open quick add
+            // Close any other open quick add and open this section's input
             this.quickAddSectionId = sectionId;
             this.quickAddName = '';
             this.quickAddSuggestions = [];
@@ -2313,9 +2322,106 @@ function shoppingList() {
             this.selectedQuickAddSuggestionIndex = -1;
         },
 
+        // Get the first section ID from the DOM dynamically (used by global quick-add)
+        getDefaultSectionId() {
+            const section = document.querySelector('#sections-list [data-section-id]');
+            return section ? parseInt(section.dataset.sectionId, 10) : 0;
+        },
+
+        // Submit global quick-add (adds to first section)
+        async submitGlobalQuickAdd() {
+            const sectionId = this.getDefaultSectionId();
+            if (!sectionId) return;
+            await this.submitQuickAdd(sectionId);
+        },
+
+        // Global quick add - focuses the always-visible bottom input
+        focusGlobalQuickAdd() {
+            // iOS keyboard trick: focus hidden input SYNCHRONOUSLY to trigger keyboard
+            const iosTrigger = document.getElementById('ios-keyboard-trigger');
+            if (iosTrigger) {
+                iosTrigger.focus();
+            }
+
+            // Close any section-level quick add
+            if (this.quickAddSectionId !== null) {
+                this.quickAddSectionId = null;
+                this.quickAddSuggestions = [];
+                this.showQuickAddSuggestions = false;
+                this.selectedQuickAddSuggestionIndex = -1;
+            }
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    const input = document.getElementById('global-quick-add-input');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }, 10);
+            });
+        },
+
+        // Legacy helpers kept for backward compatibility (no-ops now that bar is always visible)
+        openGlobalQuickAdd() { this.focusGlobalQuickAdd(); },
+        closeGlobalQuickAdd() {
+            this.quickAddName = '';
+            this.quickAddSuggestions = [];
+            this.showQuickAddSuggestions = false;
+            this.selectedQuickAddSuggestionIndex = -1;
+        },
+
+        handleGlobalQuickAddKeydown(event) {
+            const defaultSectionId = this.getDefaultSectionId();
+            if (!defaultSectionId) return;
+            // Handle suggestions navigation
+            if (this.showQuickAddSuggestions && this.quickAddSuggestions.length > 0) {
+                switch (event.key) {
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.min(
+                            this.selectedQuickAddSuggestionIndex + 1,
+                            this.quickAddSuggestions.length - 1
+                        );
+                        return;
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.max(this.selectedQuickAddSuggestionIndex - 1, -1);
+                        return;
+                    case 'Enter':
+                        if (this.selectedQuickAddSuggestionIndex >= 0) {
+                            event.preventDefault();
+                            this.selectQuickAddSuggestion(this.quickAddSuggestions[this.selectedQuickAddSuggestionIndex]);
+                            return;
+                        }
+                        break;
+                }
+            }
+
+            // Handle Enter to submit
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                this.submitGlobalQuickAdd();
+                return;
+            }
+
+            // Handle Escape: clear suggestions first, then clear input (bar stays visible)
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (this.showQuickAddSuggestions) {
+                    this.showQuickAddSuggestions = false;
+                    this.selectedQuickAddSuggestionIndex = -1;
+                } else {
+                    this.quickAddName = '';
+                    document.getElementById('global-quick-add-input')?.blur();
+                }
+            }
+        },
+
         async submitQuickAdd(sectionId) {
             const name = this.quickAddName.trim();
             if (!name) return;
+            if (!sectionId) return;
 
             // Mark as local action to prevent double refresh from WebSocket
             this.markLocalAction('item_created');
