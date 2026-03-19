@@ -1062,7 +1062,7 @@ function shoppingList() {
             try {
                 const response = await fetch(`/sections/${sectionId}/${action}`, { method: 'POST' });
                 if (response.ok) {
-                    await this.refreshSection(sectionId);
+                    await this.refreshSection(sectionId, { force: true });
                     this.refreshStats();
                 }
             } catch (error) {
@@ -1480,8 +1480,12 @@ function shoppingList() {
                     return;
                 }
 
-                // Refresh the entire section to get correct sort order
-                await this.refreshSection(sectionId);
+                // Refresh the entire section to get correct sort order.
+                // Use force:true so this always runs even if a background fullRefresh
+                // suppression window is active (e.g. right after the browser tab becomes
+                // visible again). Without force the section would not update and the user
+                // would have to click the item multiple times before seeing it checked.
+                await this.refreshSection(sectionId, { force: true });
                 this.refreshStats();
             } catch (error) {
                 // Intermittent signal: isOnline=true but fetch fails
