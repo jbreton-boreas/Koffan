@@ -298,6 +298,12 @@ function shoppingList() {
         _isRefreshing: false,
         _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
 
+        // Return the current list ID extracted from the page URL (e.g. /lists/5 → 5), or null if not on a list page.
+        currentListId() {
+            const match = window.location.pathname.match(/^\/lists\/(\d+)/);
+            return match ? match[1] : null;
+        },
+
         // Check if add-item form is currently active (to prevent dropdown updates during form use)
         _isAddFormActive() {
             // Check if mobile add-item modal is open
@@ -977,7 +983,9 @@ function shoppingList() {
 
                 try {
                     // Fetch current sections list as JSON
-                    const resp = await fetch('/sections/list?format=json');
+                    const listId = this.currentListId();
+                    const sectionsUrl = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                    const resp = await fetch(sectionsUrl);
                     if (!resp.ok) { this._isRefreshing = false; return; }
                     const sections = await resp.json();
                     const sectionsList = document.getElementById('sections-list');
@@ -1181,7 +1189,9 @@ function shoppingList() {
 
         async refreshSectionSelectsFromServer() {
             try {
-                const r = await fetch('/sections/list?format=json');
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                const r = await fetch(url);
                 if (r.ok) {
                     const sections = await r.json();
                     this.updateSectionSelects(sections);
@@ -1195,7 +1205,9 @@ function shoppingList() {
         refreshManageSectionsModal() {
             const manageSectionsList = document.getElementById('manage-sections-list');
             if (manageSectionsList) {
-                fetch('/sections/list').then(r => {
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?list_id=${listId}` : '/sections/list';
+                fetch(url).then(r => {
                     if (r.ok) return r.text();
                 }).then(html => {
                     if (html) {
@@ -1208,7 +1220,9 @@ function shoppingList() {
 
         async reorderSections() {
             try {
-                const response = await fetch('/sections/list?format=json');
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                const response = await fetch(url);
                 if (!response.ok) return;
                 const sections = await response.json();
                 const sectionsList = document.getElementById('sections-list');
@@ -2041,7 +2055,9 @@ function shoppingList() {
 
                         if (createResponse.ok) {
                             // Fetch updated sections list to get the new ID
-                            const listResponse = await fetch('/sections/list?format=json');
+                            const listId = this.currentListId();
+                            const sectionsListUrl = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                            const listResponse = await fetch(sectionsListUrl);
                             if (listResponse.ok) {
                                 const sections = await listResponse.json();
                                 // Find the newly created section by name
