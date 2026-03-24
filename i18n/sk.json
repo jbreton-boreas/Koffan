@@ -26,7 +26,9 @@
     "shopping_list": "Nákupný zoznam",
     "completed": "hotovo",
     "bought": "Kúpené",
-    "name_exists": "Zoznam s týmto názvom už existuje"
+    "name_exists": "Zoznam s týmto názvom už existuje",
+    "hide_bought": "Skryť kúpené",
+    "show_bought": "Zobraziť kúpené"
   },
   "items": {
     "what_to_buy": "Čo treba kúpiť?",

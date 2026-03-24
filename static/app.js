@@ -243,6 +243,9 @@ function shoppingList() {
         selectedHistoryIds: [],
         historySectionMode: localStorage.getItem('history_section_mode') || 'use_first_section',
 
+        // Hide bought items toggle
+        hideBought: localStorage.getItem('hide_bought') === 'true',
+
         // Import/Export
         showImportPreview: false,
         importPreview: {},
@@ -1136,7 +1139,11 @@ function shoppingList() {
                 ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
 
             if (completedWrapper) {
-                completedWrapper.style.display = completedCount === 0 ? 'none' : '';
+                try {
+                    Alpine.$data(completedWrapper).completedCount = completedCount;
+                } catch(e) {
+                    completedWrapper.style.display = completedCount === 0 ? 'none' : '';
+                }
             }
             const countEl = section.querySelector('.completed-count');
             if (countEl) countEl.textContent = completedCount;
@@ -2137,6 +2144,11 @@ function shoppingList() {
             localStorage.setItem('history_section_mode', mode);
         },
 
+        toggleHideBought() {
+            this.hideBought = !this.hideBought;
+            localStorage.setItem('hide_bought', this.hideBought);
+        },
+
         // Edit Item
         editItem(item) {
             this.editingItem = item;
@@ -2371,7 +2383,11 @@ function shoppingList() {
                                 if (countSpan) countSpan.textContent = newCompletedCount;
                                 const completedWrapper = sectionEl.querySelector('.completed-wrapper');
                                 if (completedWrapper) {
-                                    completedWrapper.style.display = newCompletedCount === 0 ? 'none' : '';
+                                    try {
+                                        Alpine.$data(completedWrapper).completedCount = newCompletedCount;
+                                    } catch(e) {
+                                        completedWrapper.style.display = newCompletedCount === 0 ? 'none' : '';
+                                    }
                                 }
                             }
                             // Queue toggle for sync

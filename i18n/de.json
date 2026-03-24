@@ -26,7 +26,9 @@
     "shopping_list": "Einkaufsliste",
     "completed": "erledigt",
     "bought": "Gekauft",
-    "name_exists": "Eine Liste mit diesem Namen existiert bereits"
+    "name_exists": "Eine Liste mit diesem Namen existiert bereits",
+    "hide_bought": "Gekaufte ausblenden",
+    "show_bought": "Gekaufte einblenden"
   },
   "items": {
     "what_to_buy": "Was kaufen?",
